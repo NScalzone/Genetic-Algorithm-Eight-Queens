@@ -1,4 +1,5 @@
 import random
+from matplotlib import pyplot
 
 class Board:
     config = ''
@@ -64,16 +65,25 @@ def update_population(child_list, population):
     return population
 
 def solution_found(population):
+    best_fitness = 0
+    for i in range(0, len(population), 1):
+        if population[i].fitness > best_fitness:
+            best_fitness = population[i].fitness
+           # if best_fitness == 28:
+            #   return best_fitness
+    return best_fitness
+
+def find_winning_config(population):
     for i in range(0, len(population), 1):
         if population[i].fitness == 28:
-            return population[i].config
-    return False
+            winning_config = population[i].config
+            return winning_config 
 
 def display_population(population, size):
     for i in range(0, size, 1):
         print(i, end=' ')
         population[i].print_board()
-    print('Average Fitness = ', average_fitness(population, size))
+    #print('Average Fitness = ', average_fitness(population, size))
     
 def sum_fitness(population):
     total_fitness = 0
@@ -138,42 +148,49 @@ def select_parents(population, probability_list, size):
 
 def create_child_list(parents):
     child_list = []
-    mutation_dice = random.randint(1,2) 
+    # mutation goal is 5%
+    total_population = len(parents)
+    five_percent_interval = int(total_population / 20)
+    mutation_dice = random.randint(1,five_percent_interval) 
     for i in range(0, len(parents), 2):
         current_children = crossover(parents[i], parents[i+1])
         child_list.append(current_children[0])
         child_list.append(current_children[1])
         current_children = []
-    if mutation_dice == 2:
-        index_to_mutate = random.randint(0,len(child_list) - 1)
-        child_list[index_to_mutate] = mutate(child_list[index_to_mutate])
+        if mutation_dice == i:
+            #index_to_mutate = random.randint(0,len(child_list) - 1)
+            child_list[i] = mutate(child_list[i])
     return child_list
 
-def mutate(to_mutate):
-    
-    print(f'Mutate {to_mutate}')
-    digit_to_mutate = random.randint(0,9)
+def mutate(to_mutate): 
+    #print(f'Mutate {to_mutate}')
+    digit_to_mutate = random.randint(0,7)
     new_child = ''
     for i in range(0, len(to_mutate), 1):
         if i != digit_to_mutate:
             new_child += to_mutate[i]
         else:
+          #  print(f'mutate at {digit_to_mutate}')
             new_child += str(random.randint(1,8))
-        #print(f'New child = {new_child}')
+       # print(f'New child = {new_child}')
     return new_child
         
 # Set population size
-populationSize = 100
+populationSize = 500
 
 # generate initial population
 population = create_population(populationSize)
 
 display_population(population, populationSize)
 runs = 0
-solution = False
-while runs < 2000 and not solution:
+solution = 0
+max_fitness_values = []
+average_fitness_values = []
+
+while runs < 1500 and solution < 28:
     solution = solution_found(population) 
-    if not solution:
+    
+    if solution < 28:
         total_fitness = sum_fitness(population)
         probability_list = create_probability_list(population, populationSize)
         #print(f'Total fitness = {total_fitness}')
@@ -185,23 +202,24 @@ while runs < 2000 and not solution:
         #mutate(children)
         #print('children', children)
         population = update_population(children, population)
-        print('Runs = ', (runs + 1))
+        
         display_population(population, populationSize)
+        current_average_fitness = average_fitness(population, populationSize)
+        print('Average Fitness = ', current_average_fitness )
+        print('Best fitness = ',solution)
+        print('Runs = ', (runs + 1), '\n')
+        max_fitness_values.append(solution)
+        average_fitness_values.append(current_average_fitness)
+        
         runs += 1
     else:
-        print(f'Solution Found! After {runs} iterations, {solution} solves the 8 queens problem')
+        winning_config = find_winning_config(population)
+        print(f'Solution Found! After {runs} iterations, {winning_config} solves the 8 queens problem')
 
-#print(crossover(initial_population[0], initial_population[1]))
-#print(max(initial_population, key=initial_population.get))
-#print(initial_population)
-#print(board)
+x = [x for x in range(len(max_fitness_values))]
 
-#solution_board = '51842736'
-
-#print(solution_board)
-#score = fitness_function(board)
-
-#print(score)
-    
-    
-    
+pyplot.plot(x, max_fitness_values, label = "Max Fitness")
+pyplot.plot(x, average_fitness_values, label = "Average Fitness")
+pyplot.title(f'Max fitness value. Starting Population = {populationSize}, iterations = {runs}')
+pyplot.legend()
+pyplot.show()
