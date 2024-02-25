@@ -1,4 +1,5 @@
 import random
+import math
 from matplotlib import pyplot
 
 class Board:
@@ -149,17 +150,20 @@ def select_parents(population, probability_list, size):
 def create_child_list(parents):
     child_list = []
     # mutation goal is 5%
+    total_mutations = 0
     total_population = len(parents)
-    five_percent_interval = int(total_population / 20)
-    mutation_dice = random.randint(1,five_percent_interval) 
+    five_percent_interval = int(math.ceil(total_population * 0.05))
+    mutation_interval = int(total_population/five_percent_interval) 
     for i in range(0, len(parents), 2):
         current_children = crossover(parents[i], parents[i+1])
         child_list.append(current_children[0])
         child_list.append(current_children[1])
         current_children = []
-        if mutation_dice == i:
+        if i % mutation_interval == 0:
             #index_to_mutate = random.randint(0,len(child_list) - 1)
             child_list[i] = mutate(child_list[i])
+            total_mutations += 1
+    print(f'total mutations = {total_mutations}')
     return child_list
 
 def mutate(to_mutate): 
@@ -176,7 +180,7 @@ def mutate(to_mutate):
     return new_child
         
 # Set population size
-populationSize = 500
+populationSize = 10
 
 # generate initial population
 population = create_population(populationSize)
@@ -186,8 +190,9 @@ runs = 0
 solution = 0
 max_fitness_values = []
 average_fitness_values = []
+population_samples = {}
 
-while runs < 1500 and solution < 28:
+while runs < 5000 and solution < 28:
     solution = solution_found(population) 
     
     if solution < 28:
@@ -210,14 +215,17 @@ while runs < 1500 and solution < 28:
         print('Runs = ', (runs + 1), '\n')
         max_fitness_values.append(solution)
         average_fitness_values.append(current_average_fitness)
-        
         runs += 1
+        if runs % 100 == 0:
+            population_samples[runs] = population[0].config
+        
     else:
         winning_config = find_winning_config(population)
         print(f'Solution Found! After {runs} iterations, {winning_config} solves the 8 queens problem')
 
-x = [x for x in range(len(max_fitness_values))]
+print(population_samples)
 
+x = [x for x in range(len(max_fitness_values))]
 pyplot.plot(x, max_fitness_values, label = "Max Fitness")
 pyplot.plot(x, average_fitness_values, label = "Average Fitness")
 pyplot.title(f'Max fitness value. Starting Population = {populationSize}, iterations = {runs}')
